@@ -1,0 +1,22 @@
+import static org.junit.Assert.*;
+
+import java.math.BigInteger;
+
+import org.junit.Test;
+
+
+public class SearcherTest {
+
+	@Test
+	public void testSymmetrize() {
+		//test symmetrizing the set {1,2} (0011 = 3) to (1111 = 15) 
+		Searcher s = new Searcher(5,3);
+		assertEquals("15",s.symmetrizeSet(new BigInteger("3")).toString());
+
+		//test symmetrizing the set {1} (0001 = 1) to (1001 = 9)
+		assertEquals("9",s.symmetrizeSet(new BigInteger("1")).toString());
+		
+	
+	}
+
+}
