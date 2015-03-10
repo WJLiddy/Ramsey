@@ -1,3 +1,5 @@
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 
 
@@ -9,10 +11,14 @@ public class Searcher {
 	//maximum clique size in a valid graph
 	public int maxCliqueSizeAllowed;
 
+	public final int totalGraphCount = 352717;
+	public int successfulGraphs = 0;
 	//set of relations of each node on the circulant graph.
 	//where bit 0 represents a connection to 1;
 	//bit 1 represents a connection to 2;
 	//to bit n-1
+	
+	public boolean haltRecursion = false;
 	
 	
 	public static void main(String args[]){
@@ -44,14 +50,31 @@ public class Searcher {
 			analyzeRelationSet(symSet);
 		//	System.out.println("Analyzed for R " + maxCliqueSizeAllowed + " " + relationSet.toString());
 			DEBUGcount++;
-			System.out.println(DEBUGcount);
+			System.out.println("\n" + (DEBUGcount*100)/totalGraphCount + "%");
+			System.out.print("S: " + successfulGraphs);
 			
 		}
 		
 	}
 	
 	private void analyzeRelationSet(BigInteger relationSet) {
-		//smoke weed every day
+		//here it is important to convert to an adjaency matrix.
+		//shift all sets left by one.
+		haltRecursion = false;
+		
+		System.out.println("\nAnalysis of : " + relationSet.toString(2));
+		graphValid(relationSet.shiftLeft(1),relationSet.shiftLeft(1),2,0);
+		
+		System.out.println("\nAnalysis of complement: " + invert(relationSet).toString(2));
+		graphValid(invert(relationSet).shiftLeft(1),invert(relationSet).shiftLeft(1),2,0);
+		
+		if(haltRecursion == false){
+			System.out.println("WINNER!");
+			printSet(relationSet);
+			printSet(invert(relationSet));
+			successfulGraphs++;
+		}
+		
 	}
 
 	public BigInteger getNextRelationSet(BigInteger relationSet){
@@ -101,5 +124,123 @@ public class Searcher {
 	
 		return relationSet;
 	}	
+	
+	public void graphValid(BigInteger relationSet, BigInteger cliquedNodes, int currentCliqueSize, int initNode){
+		
+		if(currentCliqueSize > maxCliqueSizeAllowed){
+			haltRecursion = true;
+	//		System.out.println("Graph failed...");
+			return;
+		}
+	
+	//	System.out.println("\nSTART on node " + initNode +
+	//					   "\nRelationSet: " + relationSet.toString(2) +
+	//					   "\nPrevCliqued: " + cliquedNodes.toString(2) + 
+	//					   "\nCliqueSize: " + currentCliqueSize);
+		
+		//where relationSet is the set of relations from node zero,
+		//cliquesNodes are all nodes that are cliqued to each other and additional nodes from cliquedNodes
+		//initNode is one of the cliqued Nodes. 
+		
+		//We return a set nodes that are cliqued to the previously cliqued nodes plus the initial Node.
+		
+		//get elements to analyze - no need to analyze nodes > size/2  due to symmetry
+		BigInteger analyzeSet = clearUpper(cliquedNodes);
+		
+		//All of these nodes are cliqued with initNode. What else are they cliqued to?
+		for(int i = 0; i != graphSize/2;i++){
+			if(analyzeSet.testBit(i)){
+		//		System.out.println("For node i = " + i);
+				//we know: i is a cliqued Node
+				BigInteger nodesConnectedToi = relationSet.shiftLeft(i);
+		//		System.out.println("i is connected to : " + nodesConnectedToi.toString(2));
+				//Does that part work? what about the lower nodes?
+				//We can find out in testing.
+				//anyway
+				BigInteger nodesCliquedWithiAndCliqued = cliquedNodes.and(nodesConnectedToi);
+				
+
+		//		System.out.println("i is fully cliqued with : " + nodesCliquedWithiAndCliqued.toString(2));
+				
+				for(int j = 0; j != graphSize-1;j++){
+					if(nodesCliquedWithiAndCliqued.testBit(j)){
+						//check if the clique got too big. If it did -> return false;						
+						graphValid(relationSet,nodesCliquedWithiAndCliqued,currentCliqueSize+1,j);				
+					}
+				}
+			}
+		}
+	}
+	
+	//for use in analysis.
+	public BigInteger clearUpper(BigInteger b){
+		
+		for(int i = 0; i !=(graphSize-1)/2; i++){
+				b = b.clearBit((graphSize-1)-1-i);		
+		}
+		return b;
+	}
+	
+	//put the graph in mathematica notation.
+	public void printSet(BigInteger relationSet){
+		PrintWriter writer;
+		try {
+			System.out.println("Printing: " + relationSet.toString(2));
+			writer = new PrintWriter(new Double(Math.random()).toString() + ".txt");
+			//ok now we write the wolfram code
+			writer.print("FindClique[AdjacencyGraph[{");
+			for(int i = 0; i != graphSize; i++){
+				writer.print("{");
+				
+				//put all the ints in, starting at j = 0.
+				//if j is less than i, add the size of the graph
+				//if j = i put zero
+				//if j > i put j - i
+				int j = 0;
+				while (j != graphSize){
+					
+					
+					if(j < i){
+						writer.print(relationSet.testBit((graphSize-1)-(i-j))? "1" : "0");
+					}
+					if(i == j){
+						writer.print("0");
+					}
+					if(j > i){
+						writer.print(relationSet.testBit(j-(i+1))? "1" : "0");
+					}
+					
+					j++;
+					
+					if(j != graphSize)
+						writer.print(",");
+				}
+				
+				writer.print("}");
+				
+				if(i != graphSize-1)
+					writer.print(",");
+				
+			}
+		
+
+			writer.print("}]]");
+			
+				
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	//for a relation set, invert.
+	public BigInteger invert(BigInteger b){
+		for(int i = 0; i !=(graphSize-1); i++){
+			b = b.flipBit(i);		
+		}
+	return b;
+	}
+	
 	
 }

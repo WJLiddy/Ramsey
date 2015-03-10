@@ -71,15 +71,34 @@ public class SearcherTest {
 	
 	@Test
 	public void testSearchTime(){
-		Searcher s = new Searcher(5,3);
+		Searcher s = new Searcher(5,2);
+		//s.search();
+	
+		//s = new Searcher(17,3);
+		//s.search();
+		
+		s = new Searcher(45,4);
 		s.search();
 		
-		s = new Searcher(17,4);
-		s.search();
+	}
+	
+	@Test
+	public void testClearUpper(){
+	
+		Searcher s = new Searcher(5,3);
+		
+		//1101 = 0001
+		assertEquals("1",s.clearUpper(new BigInteger("13")).toString());
+		//1111 = 0011
+		assertEquals("3",s.clearUpper(new BigInteger("15")).toString());
+		//0010 = 0010
+		assertEquals("3",s.clearUpper(new BigInteger("3")).toString());
 		
 		s = new Searcher(45,5);
-		s.search();
-		
+		//(0100000000010110100110 =  1050022))
+		  //(0110010110100000000010 0100000000010110100110 = 6983626261926)
+		assertEquals("1050022",s.clearUpper(new BigInteger("6983626261926")).toString());
+	
 	}
 	
 }

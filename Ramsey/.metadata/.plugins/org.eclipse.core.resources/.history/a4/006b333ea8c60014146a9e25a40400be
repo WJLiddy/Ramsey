@@ -1,0 +1,166 @@
+import java.math.BigInteger;
+
+
+public class Searcher {
+
+	//node count of the graph
+	public int graphSize;
+	
+	//maximum clique size in a valid graph
+	public int maxCliqueSizeAllowed;
+
+	public final int totalGraphCount = 352717;
+	//set of relations of each node on the circulant graph.
+	//where bit 0 represents a connection to 1;
+	//bit 1 represents a connection to 2;
+	//to bit n-1
+	
+	
+	public static void main(String args[]){
+		if(args == null){
+			Searcher c = new Searcher(17,3);
+			c.search();
+		}
+		
+		
+		
+	}
+	
+	public Searcher(int graphSize, int maxCliqueSize){
+		this.graphSize = graphSize;
+		this.maxCliqueSizeAllowed = maxCliqueSize;
+	}
+	
+	public void search(){
+		BigInteger relationSet = BigInteger.ZERO;
+		int DEBUGcount=0;
+		
+		//only need to analyze half the graphs, complement will be done in analysis.
+		//accidentally generates one extra one after it finds the last one
+		//no worries though
+		while(relationSet.longValue() < Math.pow(2, ((graphSize-1)-1)/2)){
+			relationSet = getNextRelationSet(relationSet);
+			//go ahead and get a symmetrized version
+			BigInteger symSet = symmetrizeSet(relationSet);
+			analyzeRelationSet(symSet);
+		//	System.out.println("Analyzed for R " + maxCliqueSizeAllowed + " " + relationSet.toString());
+			DEBUGcount++;
+			System.out.println((DEBUGcount*100)/totalGraphCount + "%");
+			
+		}
+		
+	}
+	
+	private void analyzeRelationSet(BigInteger relationSet) {
+		//here it is important to convert to an adjaency matrix.
+		//shift all sets left by one.
+		if(graphValid(relationSet.shiftLeft(1),relationSet.shiftLeft(1),2,0))
+			//Winner! Print graph to file
+			printSet(relationSet);
+
+	}
+
+	public BigInteger getNextRelationSet(BigInteger relationSet){
+	
+		//increment the old integer by one
+		relationSet = relationSet.add(BigInteger.ONE);
+		
+		//find a balanced realtion set.
+		while (!relationSetBalanced(relationSet)){
+			relationSet = relationSet.add(BigInteger.ONE);
+		}
+		
+		return relationSet;
+	}
+	
+	
+	//returns true if each edges in the relation set
+	//has the same number of edges in the complement 
+	public boolean relationSetBalanced(BigInteger relationSet){
+		int zeroSum = 0;
+		int oneSum = 0;
+		// because we only care about the lower half of the relationSet due to symmetry
+		// only search n-1 / 2 nodes
+		for(int i = 0; i != (graphSize-1)/2; i++){
+			
+			if(relationSet.testBit(i))
+				oneSum++;
+			else
+				zeroSum++;
+		}
+		
+		if(oneSum != zeroSum)
+			return false;
+		else
+			return true;
+		
+	}
+	
+	//takes a set and expands it to all nodes
+	public BigInteger symmetrizeSet(BigInteger relationSet){
+	
+		for(int i = 0; i !=(graphSize-1)/2; i++){
+			
+			if(relationSet.testBit(i))
+				relationSet = relationSet.setBit((graphSize-1)-1-i);		
+		}
+	
+		return relationSet;
+	}	
+	
+	public boolean graphValid(BigInteger relationSet, BigInteger cliquedNodes, int currentCliqueSize, int initNode){
+		
+		System.out.println("\nSTART on node " + initNode +
+						   "\nRelationSet: " + relationSet.toString(2) +
+						   "\nPrevCliqued: " + cliquedNodes.toString(2) + 
+						   "\nCliqueSize:" + currentCliqueSize);
+		
+		//where relationSet is the set of relations from node zero,
+		//cliquesNodes are all nodes that are cliqued to each other and additional nodes from cliquedNodes
+		//initNode is one of the cliqued Nodes. 
+		
+		//We return a set nodes that are cliqued to the previously cliqued nodes plus the initial Node.
+		
+		//get elements to analyze - no need to analyze nodes > size/2  due to symmetry
+		BigInteger analyzeSet = clearUpper(cliquedNodes);
+		
+		//All of these nodes are cliqued with initNode. What else are they cliqued to?
+		for(int i = 0; i != graphSize/2;i++){
+			if(analyzeSet.testBit(i)){
+				System.out.println("For node i =" + i);
+				//we know: i is a cliqued Node
+				BigInteger nodesConnectedToi = relationSet.shiftLeft(i);
+				//Does that part work? what about the lower nodes?
+				//We can find out in testing.
+				//anyway
+				BigInteger nodesCliquedWithiAndCliqued = cliquedNodes.and(nodesConnectedToi);
+				
+
+				System.out.println("i is cliqued with : " + nodesCliquedWithiAndCliqued.toString(2));
+				
+				for(int j = 0; j != graphSize/2;j++){
+					if(nodesCliquedWithiAndCliqued.testBit(j)){
+						graphValid(relationSet,nodesCliquedWithiAndCliqued,currentCliqueSize+1,j);				
+					}
+				}
+			}
+		}
+		
+		return false;
+		
+	}
+	
+	//for use in analysis.
+	public BigInteger clearUpper(BigInteger b){
+		
+		for(int i = 0; i !=(graphSize-1)/2; i++){
+				b = b.clearBit((graphSize-1)-1-i);		
+		}
+		return b;
+	}
+	
+	public void printSet(BigInteger relationSet){
+		
+		
+	}
+}

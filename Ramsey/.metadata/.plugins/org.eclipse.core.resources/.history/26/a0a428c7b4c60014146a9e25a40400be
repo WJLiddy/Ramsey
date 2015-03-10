@@ -1,0 +1,104 @@
+import static org.junit.Assert.*;
+
+import java.math.BigInteger;
+
+import org.junit.Test;
+
+
+public class SearcherTest {
+
+	@Test
+	public void testSymmetrize() {
+		//test symmetrizing the set {1,2} (0011 = 3) to (1111 = 15) 
+		Searcher s = new Searcher(5,3);
+		assertEquals("15",s.symmetrizeSet(new BigInteger("3")).toString());
+
+		//test symmetrizing the set {1} (0001 = 1) to (1001 = 9)
+		assertEquals("9",s.symmetrizeSet(new BigInteger("1")).toString());
+		
+		s = new Searcher(45,9);
+		//test symmetrizing the set {2 3 6 8 9 11 20 }
+								  //(0100000000010110100110 =  1050022))
+								  //(0110010110100000000010 0100000000010110100110 = 6983626261926)
+		assertEquals("6983626261926",s.symmetrizeSet(new BigInteger("1050022")).toString());
+	}
+	
+	//ok symmetrize works. What is next? 
+	@Test
+	public void testRelationSetBalanced() {
+		
+		//test symmetrizing the set {1,2} is certainly not balanced. (0011)
+		Searcher s = new Searcher(5,3);
+		assertFalse(s.relationSetBalanced(new BigInteger("3")));
+
+		//{1} and {2} are balanced
+		assertTrue(s.relationSetBalanced(new BigInteger("2")));
+		assertTrue(s.relationSetBalanced(new BigInteger("1")));
+		
+		
+		s = new Searcher(45,9);
+		//test symmetrizing the set {2 3 6 8 9 11 20 }
+								  //(0100000000010110100110 =  1050022))
+								  //(0110010110100000000010 0100000000010110100110 = 6983626261926)
+		assertFalse(s.relationSetBalanced(new BigInteger("3")));
+		assertFalse(s.relationSetBalanced(new BigInteger("1050022")));
+		//you know what is balanced though?
+		//00000000000 11111111111
+		assertTrue(s.relationSetBalanced(new BigInteger("2047")));
+		
+	}
+
+	
+	@Test
+	public void testgetNextRelationSet() {
+
+		//on r(3,3)
+		//What comes after (0000)?
+		//ez, 0001.
+		Searcher s = new Searcher(5,3);
+		assertEquals("1",s.getNextRelationSet(new BigInteger("0")).toString());
+		//after "01?" 10
+		assertEquals("2",s.getNextRelationSet(new BigInteger("1")).toString());
+		
+		//on r(4,4)
+		s = new Searcher(17,4);
+//		//( 00000000 leads to 00001111)
+		assertEquals("15",s.getNextRelationSet(new BigInteger("0")).toString());
+//		//then 00010111)
+		assertEquals("23",s.getNextRelationSet(new BigInteger("15")).toString());
+		
+	}
+	
+	@Test
+	public void testSearchTime(){
+		Searcher s = new Searcher(9,2);
+	//	s.search();
+	
+		//s = new Searcher(17,3);
+//		s.search();
+		
+		s = new Searcher(45,4);
+		s.search();
+		
+	}
+	
+	@Test
+	public void testClearUpper(){
+	
+		Searcher s = new Searcher(5,3);
+		
+		//1101 = 0001
+		assertEquals("1",s.clearUpper(new BigInteger("13")).toString());
+		//1111 = 0011
+		assertEquals("3",s.clearUpper(new BigInteger("15")).toString());
+		//0010 = 0010
+		assertEquals("3",s.clearUpper(new BigInteger("3")).toString());
+		
+		s = new Searcher(45,5);
+		//(0100000000010110100110 =  1050022))
+		  //(0110010110100000000010 0100000000010110100110 = 6983626261926)
+		assertEquals("1050022",s.clearUpper(new BigInteger("6983626261926")).toString());
+	
+	}
+	
+}
